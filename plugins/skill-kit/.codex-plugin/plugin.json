@@ -1,0 +1,13 @@
+{
+  "name": "skill-kit",
+  "version": "0.1.0",
+  "description": "Meta-plugin for growing an original skill collection: scaffold new provider-agnostic skills (SKILL.md + references/) and keep marketplace/plugin versions in sync.",
+  "author": {
+    "name": "sei-lit"
+  },
+  "homepage": "https://github.com/sei-lit/sei-plugin/tree/main/plugins/skill-kit",
+  "repository": "https://github.com/sei-lit/sei-plugin",
+  "license": "MIT",
+  "keywords": ["skill-authoring", "scaffolding", "meta", "provider-agnostic"],
+  "skills": "./skills/"
+}

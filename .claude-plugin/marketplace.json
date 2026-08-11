@@ -1,0 +1,20 @@
+{
+  "name": "sei-plugin",
+  "owner": {
+    "name": "sei-lit"
+  },
+  "metadata": {
+    "description": "Original skills by sei-lit. Provider-agnostic: plain-Markdown skills usable from Claude Code, Codex, and other agents.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "skill-kit",
+      "source": "./plugins/skill-kit",
+      "description": "Meta-plugin for growing an original skill collection: a new-skill scaffolding skill that generates provider-agnostic SKILL.md templates and keeps marketplace/plugin versions in sync.",
+      "version": "0.1.0",
+      "category": "productivity",
+      "tags": ["skill-authoring", "scaffolding", "meta"]
+    }
+  ]
+}
