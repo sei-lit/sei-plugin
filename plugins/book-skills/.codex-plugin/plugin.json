@@ -1,0 +1,13 @@
+{
+  "name": "book-skills",
+  "version": "0.1.0",
+  "description": "Skills distilled from books: actionable procedures extracted from technical books, rewritten as review/decision checklists with attribution. First skill: good-code-review based on 'Good Code, Bad Code' by Tom Long.",
+  "author": {
+    "name": "sei-lit"
+  },
+  "homepage": "https://github.com/sei-lit/sei-plugin/tree/main/plugins/book-skills",
+  "repository": "https://github.com/sei-lit/sei-plugin",
+  "license": "MIT",
+  "keywords": ["books", "code-quality", "code-review", "good-code-bad-code"],
+  "skills": "./skills/"
+}
