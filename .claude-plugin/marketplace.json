@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Original skills by sei-lit. Provider-agnostic: plain-Markdown skills usable from Claude Code, Codex, and other agents.",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "plugins": [
     {
@@ -14,7 +14,12 @@
       "description": "Skills distilled from books: actionable procedures extracted from technical books, rewritten as review/decision checklists with attribution. First skill: good-code-review based on 'Good Code, Bad Code' by Tom Long.",
       "version": "0.1.0",
       "category": "development",
-      "tags": ["books", "code-quality", "code-review", "good-code-bad-code"]
+      "tags": [
+        "books",
+        "code-quality",
+        "code-review",
+        "good-code-bad-code"
+      ]
     },
     {
       "name": "skill-kit",
@@ -22,7 +27,25 @@
       "description": "Meta-plugin for growing an original skill collection: a new-skill scaffolding skill that generates provider-agnostic SKILL.md templates and keeps marketplace/plugin versions in sync.",
       "version": "0.1.0",
       "category": "productivity",
-      "tags": ["skill-authoring", "scaffolding", "meta"]
+      "tags": [
+        "skill-authoring",
+        "scaffolding",
+        "meta"
+      ]
+    },
+    {
+      "name": "pr-split",
+      "source": "./plugins/pr-split",
+      "description": "Split a finished feature branch into a tree of stacked PRs derived from the actual dependency graph. Bash engine (validate/apply/verify/prs) + a skill that designs the tree, gates PR creation on per-node verification, and reads per-repo knowledge from .pr-split/config.md.",
+      "version": "0.1.0",
+      "category": "development",
+      "tags": [
+        "git",
+        "stacked-pr",
+        "pull-request",
+        "code-review",
+        "workflow"
+      ]
     }
   ]
 }
