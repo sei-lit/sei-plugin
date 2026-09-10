@@ -1,0 +1,12 @@
+{
+  "name": "pr-split",
+  "version": "0.1.0",
+  "description": "Split a finished feature branch into a tree of stacked PRs derived from the actual dependency graph (contract at the root, parallel implementation branches, wiring at the leaves). Ships a bash engine (validate/apply/verify/prs) plus a skill that designs the tree, gates PR creation on per-node verification, and reads per-repo knowledge from .pr-split/config.md.",
+  "author": {
+    "name": "sei-lit"
+  },
+  "homepage": "https://github.com/sei-lit/sei-plugin/tree/main/plugins/pr-split",
+  "repository": "https://github.com/sei-lit/sei-plugin",
+  "license": "MIT",
+  "keywords": ["git", "stacked-pr", "pull-request", "code-review", "workflow"]
+}
