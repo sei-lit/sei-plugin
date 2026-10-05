@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Original skills by sei-lit. Provider-agnostic: plain-Markdown skills usable from Claude Code, Codex, and other agents.",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
@@ -45,6 +45,20 @@
         "pull-request",
         "code-review",
         "workflow"
+      ]
+    },
+    {
+      "name": "model-strategy",
+      "source": "./plugins/model-strategy",
+      "description": "Choose a cost-effective main model, effort, and bounded delegation plan for Claude Code or Codex. model-effort-guide skill + references, route-policy audit script, and Haiku/Sonnet/Opus/Fable agent definitions. Ported from 9uiLe/plugins model-strategy 0.5.0 (MIT); hooks are not bundled.",
+      "version": "0.1.0",
+      "category": "productivity",
+      "tags": [
+        "model-selection",
+        "effort",
+        "cost-optimization",
+        "subagents",
+        "token-economy"
       ]
     }
   ]

@@ -1,0 +1,20 @@
+{
+  "name": "model-strategy",
+  "version": "0.1.0",
+  "description": "Choose a cost-effective main model, effort, and bounded delegation plan for Claude Code or Codex. Ships the model-effort-guide skill with its references, the route-policy audit script, and Haiku/Sonnet/Opus/Fable agent definitions. Ported from 9uiLe/plugins model-strategy 0.5.0 (MIT).",
+  "author": {
+    "name": "sei-lit"
+  },
+  "homepage": "https://github.com/sei-lit/sei-plugin/tree/main/plugins/model-strategy",
+  "repository": "https://github.com/sei-lit/sei-plugin",
+  "license": "MIT",
+  "keywords": [
+    "model-selection",
+    "effort",
+    "cost-optimization",
+    "subagents",
+    "pricing",
+    "token-economy"
+  ],
+  "skills": "./skills/"
+}
