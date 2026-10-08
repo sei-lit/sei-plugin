@@ -110,7 +110,7 @@ for (const { name, input, expectedRule, expectReasonIncludes } of cases) {
 }
 
 function manifest(tasks) {
-  return { mode: "judge-main", modeSource: "default", sessionModel: "claude-opus-4-8", tasks };
+  return { mode: "judge-main", modeSource: "default", sessionModel: "claude-opus-5-5", tasks };
 }
 
 function task(overrides = {}) {
@@ -324,7 +324,7 @@ function conductorManifest(tasks, overrides = {}) {
 }
 
 test("auditManifest: mode=conductor かつ sessionModel が opus/fable を含むと MODE_MODEL_MISMATCH", () => {
-  const result = auditManifest(conductorManifest([], { sessionModel: "claude-opus-4-8" }));
+  const result = auditManifest(conductorManifest([], { sessionModel: "claude-opus-5-5" }));
   assert.equal(result.status, "FINDINGS");
   assert.ok(result.findings.some((f) => f.code === "MODE_MODEL_MISMATCH"));
 });
