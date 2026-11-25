@@ -22,7 +22,8 @@ dev-task-flow はパスではなくスキル名で次のスキルを参照する
 | good-code-review | このマーケットプレイスの `book-skills` プラグイン |
 | pr-split | このマーケットプレイスの `pr-split` プラグイン |
 | orchestration（Orca） | Orca が配布するスキル |
-| pr-creator / incremental-commit / review-checklist / PR 前レビュー | 対象プロジェクト側にあれば使う |
+| pr-creator | このマーケットプレイスには未収録 |
+| incremental-commit / review-checklist / PR 前レビュー | 対象プロジェクト側にあれば使う |
 
 ## 使い方
 
