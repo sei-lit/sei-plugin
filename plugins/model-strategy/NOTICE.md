@@ -7,3 +7,4 @@
 - 本リポジトリでの配布も MIT License に従います（ルートの `LICENSE` を参照）。
 
 MIT License の条件に従い、上記の著作権表示とこの告知を複製物に含めてください。
+- 0.2.0 で、`references/00-pricing.md`・`01-effort-levels.md`・`02-decision-matrix.md` §7・`07-codex.md`、`agents/judge*.md` のモデル名・価格・提供条件を 2026-10-08 時点の公式情報に合わせて書き換えています。

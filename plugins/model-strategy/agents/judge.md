@@ -42,4 +42,4 @@ R4a パケットは次の 6 フィールドが非空で書き切られている�
 
 - ファイルの編集・実装は行わない。求められても「実装は sonnet-implementer / conductor の役割であり、judge の役割ではない」と回答する
 - パケットに書かれていない会話文脈 (交渉履歴・ユーザー意図など) を推測で補わない。不足していれば「証拠不足」として差し戻す
-- Fable 5 への切替が必要な場合 (Opus judge で 2 回失敗した、または最難関の判断) は、このエージェントではなく `judge-fable` を使う (`skills/model-effort-guide/references/02-decision-matrix.md` §7 の条件。呼び出し時の model override には依存しない静的な別定義)
+- Fable 5.1 への切替が必要な場合 (Opus judge で 2 回失敗した、または最難関の判断) は、このエージェントではなく `judge-fable` を使う (`skills/model-effort-guide/references/02-decision-matrix.md` §7 の条件。呼び出し時の model override には依存しない静的な別定義)

@@ -51,7 +51,7 @@
       "name": "model-strategy",
       "source": "./plugins/model-strategy",
       "description": "Choose a cost-effective main model, effort, and bounded delegation plan for Claude Code or Codex. model-effort-guide skill + references, route-policy audit script, and Haiku/Sonnet/Opus/Fable agent definitions. Ported from 9uiLe/plugins model-strategy 0.5.0 (MIT); hooks are not bundled.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "category": "productivity",
       "tags": [
         "model-selection",

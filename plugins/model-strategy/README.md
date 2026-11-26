@@ -49,7 +49,7 @@ model-effort-guide を使って、このタスクに合うモデル・effort・�
 | `haiku-scout` | Haiku | 探索・独立検証 |
 | `sonnet-implementer` | Sonnet | 仕様が確定した実装 |
 | `judge` | Opus | 高保証モードの独立判定 |
-| `judge-fable` | Fable 5 | 高保証モードの難しい判断や、Opus judge で解決できない問題の独立判定 |
+| `judge-fable` | Fable（現在は 5.1） | 高保証モードの難しい判断や、Opus judge で解決できない問題の独立判定 |
 
 Codex では利用可能なモデルと委譲機能に応じて担当を選ぶ（`references/07-codex.md`）。
 
