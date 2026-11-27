@@ -1,0 +1,17 @@
+{
+  "description": "dev-task-flow を開いたセッションで、PR の作成・ready・worker_done の直前に、最後の差分に self-review を当てたかとスタックの取り込み漏れを確かめる",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); case \"$input\" in *'gh pr'*|*'orchestration send'*) ;; *) exit 0 ;; esac; command -v python3 >/dev/null 2>&1 || exit 0; printf '%s' \"$input\" | python3 -I \"${CLAUDE_PLUGIN_ROOT}/hooks/final_diff_check.py\"",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}
