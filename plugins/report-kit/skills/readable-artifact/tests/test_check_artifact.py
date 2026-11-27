@@ -138,6 +138,13 @@ class AddCases(unittest.TestCase):
         self.assertEqual(check_artifact.add_cases(fb, self.tmp / "cases", L), [("2026-01-10-01", True, [gone])])
         self.assertEqual(self.pages("2026-01-10-01"), {"after.html": "unrated"})
 
+    def test_rewriting_the_feedback_keeps_its_file_mode(self):
+        fb = self.tmp / "fb.jsonl"
+        write_feedback(fb, [record("bad", before=self.bad)])
+        fb.chmod(0o644)
+        check_artifact.add_cases(fb, self.tmp / "cases", L)
+        self.assertEqual(fb.stat().st_mode & 0o777, 0o644)
+
     def test_case_records_scores_at_creation(self):
         fb = self.tmp / "fb.jsonl"
         write_feedback(fb, [record("bad", before=self.bad)])
@@ -197,11 +204,12 @@ class Gaps(unittest.TestCase):
 
 
 class Readability(unittest.TestCase):
-    def test_lead_allows_three_points_and_one_meta_line(self):
-        ok = THEME + "<h1>題</h1><p>1 月 10 日時点。</p><ul><li>一つ。</li><li>二つ。</li><li>三つ。</li></ul>"
+    def test_lead_allows_points_and_meta_lines_up_to_the_limit(self):
+        meta = "<p>1 月 10 日時点。</p>" * L["lead"]["meta_max_lines"]
+        ok = THEME + "<h1>題</h1>" + meta + "<ul>" + "<li>要点。</li>" * L["lead"]["max_points"] + "</ul>"
         self.assertTrue(check(ok, "lead")["pass"])
 
-    def test_lead_rejects_four_points(self):
+    def test_lead_rejects_more_points_than_the_limit(self):
         ng = THEME + "<h1>題</h1><ul>" + "<li>要点。</li>" * (L["lead"]["max_points"] + 1) + "</ul>"
         self.assertFalse(check(ng, "lead")["pass"])
 
@@ -255,7 +263,7 @@ class Readability(unittest.TestCase):
         self.assertFalse(check(ng, "cell")["pass"])
 
     def test_same_wording_in_lead_and_body_fails(self):
-        s = "キューに移すと送るまでの遅れが一時間からほぼ零になる"
+        s = ("キューに移すと送るまでの遅れが一時間からほぼ零になる" * 3)[:L["repeat"]["min_chars"]]
         ng = THEME + f"<h1>題</h1><ul><li>{s}。</li></ul><h2>節</h2><p>{s}。</p>"
         self.assertFalse(check(ng, "repeat")["pass"])
 
@@ -270,7 +278,8 @@ class Readability(unittest.TestCase):
         self.assertTrue(check(ok, "shape")["pass"])
 
     def test_flow_written_with_arrows_fails(self):
-        ng = page("<h2>節</h2><p>受付 → キュー → ワーカー → 記録</p>")
+        steps = [f"段{i}" for i in range(L["shape"]["arrows_min"] + 1)]
+        ng = page("<h2>節</h2><p>" + " → ".join(steps) + "</p>")
         self.assertFalse(check(ng, "shape")["pass"])
 
 

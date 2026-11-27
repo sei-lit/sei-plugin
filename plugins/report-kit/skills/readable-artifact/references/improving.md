@@ -35,6 +35,7 @@
 
 ```bash
 check() { python3 "$S/scripts/check_artifact.py" "$@"; }   # bash と zsh のどちらでも動く形
+mkdir -p "$READABLE_ARTIFACT_CASES" "$READABLE_ARTIFACT_RUNS"
 # 1. ケースを作る
 check --add-cases "$READABLE_ARTIFACT_FEEDBACK" --cases "$READABLE_ARTIFACT_CASES"
 # 3. 採点して保存する（ずれがあると終了コード 1）
@@ -76,6 +77,7 @@ python3 -m unittest discover -s "$S/tests"
 ## 直すとき
 
 - 数だけを変える: limits.json の値と、SKILL.md の「文の量の上限」の表の同じ ID の行を変える。テストが両者の一致を確かめる。
+  ほかの文書は数を書かずに表か limits.json を指しているので、直すのはこの 2 か所だけ。
 - 判定を変える: `check_artifact.py` の検査を直し、`tests/test_check_artifact.py` にその場合のテストを足す。
 - 検査の無い決まり（SKILL.md の文だけの決まり）を変えたときは、同じ依頼からページを作り直して前後を比べる。
   1 回ごとに費用がかかるので、決まりの文を変えたときだけ行う。

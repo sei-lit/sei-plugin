@@ -628,6 +628,7 @@ def add_cases(feedback_path, cases_dir, limits):
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(os.path.abspath(feedback_path)), suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
+    shutil.copymode(feedback_path, tmp)  # mkstemp は 0600 で作るので、元の権限に戻してから置き換える
     os.replace(tmp, feedback_path)
     return made
 
