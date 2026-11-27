@@ -21,7 +21,7 @@ OFF_ENV = "DEV_FLOW_FINAL_CHECK"
 
 # コマンドの位置（行頭か ; & | ( の後ろ、頭の VAR=value は飛ばす）にあるときだけ数える。
 # grep や echo の引数、コミットメッセージの中に同じ文字列があるだけでは止めない
-_CMD_START = r"(?:^|[;&|(\n])\s*(?:\w+=(?:\"[^\"]*\"|'[^']*'|\S*)\s+)*"
+_CMD_START = r"(?:^|[;&|(\n])\s*(?P<env>(?:\w+=(?:\"[^\"]*\"|'[^']*'|\S*)\s+)*)"
 _PR_CREATE = re.compile(_CMD_START + r"gh\s+pr\s+create\b")
 _PR_READY = re.compile(_CMD_START + r"gh\s+pr\s+ready\b(?P<rest>[^;&|\n]*)")
 _WORKER_DONE = re.compile(_CMD_START + r"orca\s+orchestration\s+send\b(?P<rest>[^;&|\n]*)")
@@ -49,21 +49,23 @@ GIT_TIMEOUT_SEC = 5
 
 
 def trigger(command):
-    """止める判定をするコマンドなら、その名前を返す。そうでなければ None"""
-    if _PR_CREATE.search(command):
-        return "gh pr create"
+    """止める判定をするコマンドなら (名前, コマンドの頭の VAR=value の並び) を返す。そうでなければ None"""
+    m = _PR_CREATE.search(command)
+    if m:
+        return "gh pr create", m.group("env")
     m = _PR_READY.search(command)
     if m and "--undo" not in m.group("rest"):
-        return "gh pr ready"
+        return "gh pr ready", m.group("env")
     m = _WORKER_DONE.search(command)
     if m and re.search(r"--type(?:=|\s+)[\"']?worker_done\b", m.group("rest")):
-        return "worker_done"
+        return "worker_done", m.group("env")
     return None
 
 
-def skip_reason(command):
-    """抜け道の理由。変数が無ければ None、あっても理由が空なら ""。"""
-    m = _SKIP.search(command)
+def skip_reason(env_prefix):
+    """引き金のコマンドの頭に付けた抜け道の理由。変数が無ければ None、あっても理由が空なら ""。
+    コマンド全体からは探さない。報告の本文に拒否の文を引用しただけで通らないようにするため"""
+    m = _SKIP.search(env_prefix)
     if not m:
         return None
     return (m.group("dq") or m.group("sq") or m.group("bare") or "").strip()
@@ -237,10 +239,11 @@ def decide(data):
     if data.get("tool_name") != "Bash":
         return None
     command = str((data.get("tool_input") or {}).get("command", ""))
-    what = trigger(command)
-    if not what:
+    found = trigger(command)
+    if not found:
         return None
-    reason = skip_reason(command)
+    what, env_prefix = found
+    reason = skip_reason(env_prefix)
     if reason:
         return None
     path = data.get("transcript_path")

@@ -183,6 +183,14 @@ class Hook(HookRunner):
         out = self.run_hook([FLOW, self.edit_code()], 'DEV_FLOW_FINAL_CHECK_SKIP="self-review は Read で読んで当てた" gh pr create --fill')
         self.assertIsNone(out)
 
+    def test_skip_variable_quoted_in_the_body_does_not_pass(self):
+        command = 'orca orchestration send --type worker_done --body "DEV_FLOW_FINAL_CHECK_SKIP=x と書いてあった"'
+        self.assertDenied(self.run_hook([FLOW, self.edit_code()], command))
+
+    def test_skip_applies_to_the_trigger_after_cd(self):
+        command = 'cd repo && DEV_FLOW_FINAL_CHECK_SKIP="下の段は squash でマージ済み" gh pr create --fill'
+        self.assertIsNone(self.run_hook([FLOW, self.edit_code()], command))
+
     def test_turned_off_by_environment_variable(self):
         self.assertIsNone(self.run_hook([FLOW, self.edit_code()], "gh pr create --fill", env={"DEV_FLOW_FINAL_CHECK": "off"}))
 
