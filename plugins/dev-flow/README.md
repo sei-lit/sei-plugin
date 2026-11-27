@@ -38,8 +38,6 @@ dev-task-flow を開いたセッションで、PR の作成・ready・完了の�
 - dev-task-flow を開いていないセッションでは止めない。Bash を実行するたびに hook のシェルが 1 回動く。
   入力に `gh pr` か `orchestration send` が無ければ python を起動せずに終わる（手元の macOS で中央値 13 ms）。
   該当するコマンドでは記録を頭から読む（50 MB の記録で約 0.5 秒）
-- dev-task-flow の手順 6 は「まとめて直した差分が大きいときだけ self-review を当て直す」だが、この hook は
-  小さな直しでも、最後にコードを変えたあとに self-review を当てるまで止める。self-review の指摘を直したら、もう 1 回当てることになる
 - dev-task-flow を開いたセッションでは、ほかのスキル（pr-creator など）から `gh pr create` を実行する場合も同じ判定で止める
 - 同じコマンドに別の PreToolUse hook（review-checklist など）があるときは、どれか 1 つが拒否すればコマンドは実行されない
 - サブエージェントに任せたコードの変更は、親のセッションの記録に Edit として残らないので数えない

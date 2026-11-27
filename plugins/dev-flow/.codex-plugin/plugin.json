@@ -1,6 +1,6 @@
 {
   "name": "dev-flow",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Development task flow: dev-task-flow skill that runs an implementation task (feature, improvement, refactoring) from a short brief through sizing, goal exploration, delegation and design consultation, implementation, verification, self-review, PR, and final report. Delegates each step to its owning skill (goal-exploration, model-effort-guide, self-review, pr-split, etc.).",
   "author": {
     "name": "sei-lit"
