@@ -13,7 +13,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-HOOK = Path(__file__).resolve().parent.parent / "hooks" / "final_diff_check.py"
+PLUGIN_ROOT = Path(__file__).resolve().parent.parent
+HOOK = PLUGIN_ROOT / "hooks" / "final_diff_check.py"
 
 
 def tool_use(name, **inp):
@@ -32,12 +33,15 @@ def tool_result(text):
 
 
 FLOW = tool_use("Skill", skill="dev-flow:dev-task-flow")
-EDIT_CODE = tool_use("Edit", file_path="/w/repo/Sources/App/ViewModel.swift", old_string="a", new_string="b")
 REVIEW = tool_use("Skill", skill="self-review")
 
 
 class HookRunner(unittest.TestCase):
     dir: Path
+
+    def edit_code(self, root=None):
+        path = Path(root or self.dir) / "repo" / "Sources" / "App" / "ViewModel.swift"
+        return tool_use("Edit", file_path=str(path), old_string="a", new_string="b")
 
     def run_hook(self, events, command, tool_name="Bash", cwd=None, env=None, raw=None):
         transcript = self.dir / "transcript.jsonl"
@@ -75,25 +79,25 @@ class Hook(HookRunner):
     # ---- 止める場面
 
     def test_blocks_pr_create_when_code_changed_without_self_review(self):
-        out = self.run_hook([FLOW, EDIT_CODE], 'gh pr create --title "t" --body "b"')
+        out = self.run_hook([FLOW, self.edit_code()], 'gh pr create --title "t" --body "b"')
         self.assertDenied(out, "self-review を当てていない", "gh pr create",
                           "最後のコミットまでの差分に self-review", "上の段すべてへ下から順に", "今の head")
 
     def test_blocks_when_code_changed_after_the_last_self_review(self):
-        self.assertDenied(self.run_hook([FLOW, EDIT_CODE, REVIEW, EDIT_CODE], "gh pr create --fill"))
+        self.assertDenied(self.run_hook([FLOW, self.edit_code(), REVIEW, self.edit_code()], "gh pr create --fill"))
 
     def test_blocks_gh_pr_ready(self):
-        self.assertDenied(self.run_hook([FLOW, EDIT_CODE], "gh pr ready 12"), "gh pr ready")
+        self.assertDenied(self.run_hook([FLOW, self.edit_code()], "gh pr ready 12"), "gh pr ready")
 
     def test_blocks_worker_done(self):
-        out = self.run_hook([FLOW, EDIT_CODE], 'orca orchestration send --from s --type worker_done --body "done"')
+        out = self.run_hook([FLOW, self.edit_code()], 'orca orchestration send --from s --type worker_done --body "done"')
         self.assertDenied(out, "worker_done")
 
     def test_blocks_trigger_after_cd_and_env_prefix(self):
-        self.assertDenied(self.run_hook([FLOW, EDIT_CODE], 'cd repo && GH_PROMPT_DISABLED=1 gh pr create --fill'))
+        self.assertDenied(self.run_hook([FLOW, self.edit_code()], 'cd repo && GH_PROMPT_DISABLED=1 gh pr create --fill'))
 
     def test_blocks_when_flow_was_opened_by_slash_command(self):
-        self.assertDenied(self.run_hook([slash_command("dev-flow:dev-task-flow"), EDIT_CODE], "gh pr create --fill"))
+        self.assertDenied(self.run_hook([slash_command("dev-flow:dev-task-flow"), self.edit_code()], "gh pr create --fill"))
 
     def test_counts_code_rewritten_by_sed_in_bash(self):
         sed = tool_use("Bash", command="sed -i '' 's/a/b/' Sources/App/ViewModel.swift")
@@ -101,41 +105,69 @@ class Hook(HookRunner):
 
     def test_update_self_review_is_not_counted_as_self_review(self):
         other = tool_use("Skill", skill="update-self-review")
-        self.assertDenied(self.run_hook([FLOW, EDIT_CODE, other], "gh pr create --fill"))
+        self.assertDenied(self.run_hook([FLOW, self.edit_code(), other], "gh pr create --fill"))
 
     def test_blocks_when_skip_reason_is_empty(self):
-        out = self.run_hook([FLOW, EDIT_CODE], 'DEV_FLOW_FINAL_CHECK_SKIP="" gh pr create --fill')
+        out = self.run_hook([FLOW, self.edit_code()], 'DEV_FLOW_FINAL_CHECK_SKIP="" gh pr create --fill')
         self.assertDenied(out, "理由が空")
 
     # ---- 止めない場面
 
     def test_passes_session_that_did_not_open_dev_task_flow(self):
-        self.assertIsNone(self.run_hook([EDIT_CODE], "gh pr create --fill"))
+        self.assertIsNone(self.run_hook([self.edit_code()], "gh pr create --fill"))
 
     def test_flow_name_inside_a_tool_result_does_not_count_as_opening_it(self):
-        self.assertIsNone(self.run_hook([tool_result("<command-name>/dev-flow:dev-task-flow</command-name>"), EDIT_CODE],
+        self.assertIsNone(self.run_hook([tool_result("<command-name>/dev-flow:dev-task-flow</command-name>"), self.edit_code()],
                                         "gh pr create --fill"))
 
     def test_passes_when_no_code_was_changed(self):
-        doc = tool_use("Edit", file_path="/w/repo/README.md", old_string="a", new_string="b")
+        doc = tool_use("Edit", file_path=str(self.dir / "repo" / "README.md"), old_string="a", new_string="b")
         body = tool_use("Bash", command="cat > /tmp/pr-body.md <<'EOF'\nbody\nEOF")
         self.assertIsNone(self.run_hook([FLOW, doc, body], "gh pr create --body-file /tmp/pr-body.md"))
 
     def test_passes_after_self_review_on_the_last_change(self):
-        self.assertIsNone(self.run_hook([FLOW, EDIT_CODE, REVIEW], "gh pr create --fill"))
+        self.assertIsNone(self.run_hook([FLOW, self.edit_code(), REVIEW], "gh pr create --fill"))
 
     def test_self_review_via_plugin_name_or_slash_command_counts(self):
-        self.assertIsNone(self.run_hook([FLOW, EDIT_CODE, tool_use("Skill", skill="user-skills:self-review")], "gh pr create --fill"))
-        self.assertIsNone(self.run_hook([FLOW, EDIT_CODE, slash_command("self-review")], "gh pr create --fill"))
+        self.assertIsNone(self.run_hook([FLOW, self.edit_code(), tool_use("Skill", skill="user-skills:self-review")], "gh pr create --fill"))
+        self.assertIsNone(self.run_hook([FLOW, self.edit_code(), slash_command("self-review")], "gh pr create --fill"))
         read = tool_use("Read", file_path="/home/u/.claude/skills/self-review/SKILL.md")
-        self.assertIsNone(self.run_hook([FLOW, EDIT_CODE, read], "gh pr create --fill"))
+        self.assertIsNone(self.run_hook([FLOW, self.edit_code(), read], "gh pr create --fill"))
 
     def test_running_a_python_script_is_not_a_code_change(self):
         run = tool_use("Bash", command="python3 scripts/report.py > out.txt")
         self.assertIsNone(self.run_hook([FLOW, REVIEW, run], "gh pr create --fill"))
 
+    def test_commands_that_only_mention_code_paths_are_not_code_changes(self):
+        for command in ["git diff -- Sources/App/ViewModel.swift > /tmp/d.txt",
+                        "printf '%s\\n' 'test: ViewModel.swift の待ちをやめる' > /tmp/msg.txt && git commit -F /tmp/msg.txt",
+                        "python3 - <<'EOF'\nopen('/tmp/x/body.md','w').write('/tmp/x/Gen.swift')\nEOF",
+                        "python3 - /tmp/x/body.md <<'EOF'\nimport sys\np=sys.argv[1]; s=open(p).read()\n"
+                        "open(p,'w').write(s + '- guard（Presenter.swift）: 閉じている途中なら表示しない')\nEOF",
+                        "node scripts/validate.mjs && python3 - <<'EOF'\nopen('fixtures/a.json','w').write('{}')\nEOF"]:
+            with self.subTest(command=command):
+                self.assertIsNone(self.run_hook([FLOW, REVIEW, tool_use("Bash", command=command)], "gh pr create --fill"))
+
+    def test_writing_files_outside_the_working_repository_is_not_a_code_change(self):
+        for path in ["/tmp/work/check.py", "/private/tmp/claude-1/proj/abc/scratchpad/gen.swift"]:
+            with self.subTest(path=path):
+                self.assertIsNone(self.run_hook([FLOW, REVIEW, tool_use("Write", file_path=path, content="x")], "gh pr create --fill"))
+
+    def test_repository_inside_a_temp_or_scratchpad_directory_still_counts(self):
+        work = self.dir / "scratchpad" / "work"
+        work.mkdir(parents=True)
+        self.assertIsNotNone(self.run_hook([FLOW, REVIEW, self.edit_code(work)], "gh pr create --fill", cwd=work))
+
+    def test_bash_writes_into_code_files_are_code_changes(self):
+        for command in ["cat > Sources/App/New.swift <<'EOF'\nstruct New {}\nEOF",
+                        "echo 'let x = 1' >> Sources/App/ViewModel.swift",
+                        "python3 - <<'EOF'\np='Sources/App/ViewModel.swift'\ns=open(p).read()\nopen(p,'w').write(s.replace('a','b'))\nEOF",
+                        "python3 -I - Sources/App/ViewModel.swift <<'EOF'\nimport sys\np=sys.argv[1]; s=open(p).read()\nopen(p,'w').write(s)\nEOF"]:
+            with self.subTest(command=command):
+                self.assertIsNotNone(self.run_hook([FLOW, REVIEW, tool_use("Bash", command=command)], "gh pr create --fill"))
+
     def test_passes_unrelated_commands(self):
-        events = [FLOW, EDIT_CODE]
+        events = [FLOW, self.edit_code()]
         for command in ["git status", "gh pr view 12", "gh pr ready 12 --undo", "make test",
                         'orca orchestration send --type escalation --subject "Blocked"',
                         "orca orchestration ask --question 'q'",
@@ -145,14 +177,14 @@ class Hook(HookRunner):
                 self.assertIsNone(self.run_hook(events, command))
 
     def test_passes_tools_other_than_bash(self):
-        self.assertIsNone(self.run_hook([FLOW, EDIT_CODE], "gh pr create --fill", tool_name="Edit"))
+        self.assertIsNone(self.run_hook([FLOW, self.edit_code()], "gh pr create --fill", tool_name="Edit"))
 
     def test_skip_with_reason_passes(self):
-        out = self.run_hook([FLOW, EDIT_CODE], 'DEV_FLOW_FINAL_CHECK_SKIP="self-review は Read で読んで当てた" gh pr create --fill')
+        out = self.run_hook([FLOW, self.edit_code()], 'DEV_FLOW_FINAL_CHECK_SKIP="self-review は Read で読んで当てた" gh pr create --fill')
         self.assertIsNone(out)
 
     def test_turned_off_by_environment_variable(self):
-        self.assertIsNone(self.run_hook([FLOW, EDIT_CODE], "gh pr create --fill", env={"DEV_FLOW_FINAL_CHECK": "off"}))
+        self.assertIsNone(self.run_hook([FLOW, self.edit_code()], "gh pr create --fill", env={"DEV_FLOW_FINAL_CHECK": "off"}))
 
     # ---- 壊れたとき（作業を止めない）
 
@@ -168,10 +200,39 @@ class Hook(HookRunner):
 
     def test_broken_transcript_lines_are_skipped(self):
         transcript = self.dir / "t.jsonl"
-        transcript.write_text("{broken\n" + json.dumps(FLOW) + "\n[1]\n" + json.dumps(EDIT_CODE) + "\n", encoding="utf-8")
+        transcript.write_text("{broken\n" + json.dumps(FLOW) + "\n[1]\n" + json.dumps(self.edit_code()) + "\n", encoding="utf-8")
         data = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "transcript_path": str(transcript),
                 "cwd": str(self.dir), "tool_input": {"command": "gh pr create --fill"}}
         self.assertIsNotNone(self.run_hook([], "", raw=json.dumps(data)))
+
+
+class HooksJson(HookRunner):
+    """hooks.json に書いたコマンド（python を起動する前にシェルで絞る）を、そのまま通しても同じ判定になる"""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        config = json.loads((PLUGIN_ROOT / "hooks" / "hooks.json").read_text(encoding="utf-8"))
+        self.command = config["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_entry(self, events, command):
+        transcript = self.dir / "transcript.jsonl"
+        transcript.write_text("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in events), encoding="utf-8")
+        data = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "transcript_path": str(transcript),
+                "cwd": str(self.dir), "tool_input": {"command": command}}
+        r = subprocess.run(["/bin/sh", "-c", self.command], input=json.dumps(data, ensure_ascii=False),
+                           capture_output=True, text=True, env={**os.environ, "CLAUDE_PLUGIN_ROOT": str(PLUGIN_ROOT)})
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return r.stdout.strip()
+
+    def test_entry_command_blocks_and_passes_like_the_script(self):
+        self.assertIn('"deny"', self.run_entry([FLOW, self.edit_code()], "gh pr create --fill"))
+        self.assertIn('"deny"', self.run_entry([FLOW, self.edit_code()], "orca orchestration send --type worker_done --body x"))
+        self.assertEqual(self.run_entry([FLOW, self.edit_code()], "make test"), "")
+        self.assertEqual(self.run_entry([FLOW, self.edit_code(), REVIEW], "gh pr create --fill"), "")
 
 
 class Stack(HookRunner):
@@ -209,7 +270,7 @@ class Stack(HookRunner):
         self.commit("fix")
 
     def check(self, cwd=None):
-        return self.run_hook([FLOW, EDIT_CODE, REVIEW], "gh pr create --fill", cwd=cwd or self.repo)
+        return self.run_hook([FLOW, self.edit_code(), REVIEW], "gh pr create --fill", cwd=cwd or self.repo)
 
     def test_blocks_when_lower_fix_is_not_in_the_upper_step(self):
         self.fix_lower_step()

@@ -31,12 +31,16 @@ _SKIP = re.compile(SKIP_ENV + r"=(?:\"(?P<dq>[^\"]*)\"|'(?P<sq>[^']*)'|(?P<bare>
 _CODE_FILE = re.compile(
     r"\.(swift|kt|kts|java|scala|ts|tsx|js|jsx|mjs|cjs|vue|svelte|py|rb|go|rs|c|cc|cpp|h|hpp|m|mm|cs|php|dart|sh)$"
     r"|Package\.swift$")
-# Bash での書き換えは、書き込みの形があり、かつコードのファイルが対象のときだけ数える。
+# Bash での書き換えは、書き込みの先がコードのファイルのときだけ数える。コードのパスが出てくるだけの行
+# （`git diff -- A.swift > /tmp/d.txt` や、パスを含むコミットメッセージを printf で書いた行）は数えない。
 # .py と .sh を外したのは、`python3 x.py > out.txt` のようにスクリプトを実行しただけの行を書き換えと数えないため
-_BASH_WRITE = re.compile(r"sed -i|cat > |> \S+|open\([^)]*['\"]w['\"]|\.write\(|\.write_text\(")
 _BASH_CODE_PATH = re.compile(
-    r"[\w./-]+\.(swift|kt|kts|java|scala|ts|tsx|js|jsx|mjs|cjs|vue|svelte|rb|go|rs|c|cc|cpp|h|hpp|m|mm|cs|php|dart)\b"
-    r"|Package\.swift")
+    r"[\w./-]+\.(?:swift|kt|kts|java|scala|ts|tsx|js|jsx|mjs|cjs|vue|svelte|rb|go|rs|c|cc|cpp|h|hpp|m|mm|cs|php|dart)\b"
+    r"|[\w./-]*Package\.swift")
+_BASH_REDIRECT_TARGET = re.compile(r"(?:>>?|\btee(?:\s+-a)?)\s*[\"']?([^\s\"';&|)]+)")
+_BASH_SCRIPT_WRITE = re.compile(r"open\([^)]*['\"][wa]['\"]|\.write\(|\.write_text\(")
+_PYTHON_CODE_ARG = re.compile(
+    r"python3?(?:\s+-\w+)*\s+-\s+(?:\S+\s+)*?([\w./-]+\.(?:swift|kt|kts|java|scala|ts|tsx|js|jsx|mjs|cjs|vue|svelte|rb|go|rs|c|cc|cpp|h|hpp|m|mm|cs|php|dart))\s*<<")
 _SLASH_COMMAND = re.compile(r"<command-name>/(?:[\w-]+:)?([\w-]+)</command-name>")
 _SKILL_FILE = re.compile(r"skills/([\w-]+)/SKILL\.md$")
 _STACK_BRANCH = re.compile(r"^(?P<base>.+?(?:pr|/|-|_))(?P<n>\d+)$")
@@ -75,13 +79,36 @@ def _skill_of(name, inp):
     return ""
 
 
-def _is_code_edit(name, inp):
+def _outside(path, roots):
+    """作業しているリポジトリの外の絶対パスか。PR の本文や補助のスクリプトを置く一時ディレクトリを数えないため。
+    /tmp などの場所の名前で外さないのは、リポジトリそのものが一時ディレクトリにあることがあるため（eval の作業場所など）"""
+    if not roots or not os.path.isabs(path):
+        return False
+    real = os.path.realpath(path)
+    return not any(real == r or real.startswith(r.rstrip("/") + "/") for r in roots)
+
+
+def _is_code_edit(name, inp, roots=()):
     if name in ("Edit", "Write", "MultiEdit", "NotebookEdit"):
-        return bool(_CODE_FILE.search(str(inp.get("file_path") or inp.get("notebook_path") or "")))
-    if name == "Bash":
-        c = str(inp.get("command", ""))
-        return bool(_BASH_WRITE.search(c) and _BASH_CODE_PATH.search(c))
-    return False
+        path = str(inp.get("file_path") or inp.get("notebook_path") or "")
+        return bool(_CODE_FILE.search(path)) and not _outside(path, roots)
+    if name != "Bash":
+        return False
+    c = str(inp.get("command", ""))
+    code_paths = [m.group(0) for m in _BASH_CODE_PATH.finditer(c) if not _outside(m.group(0), roots)]
+    if not code_paths:
+        return False
+    if re.search(r"\bsed\s+(?:-\w+\s+)*-i", c):
+        return True
+    if any(_BASH_CODE_PATH.fullmatch(t) and not _outside(t, roots) for t in _BASH_REDIRECT_TARGET.findall(c)):
+        return True
+    # python の heredoc で、コードのファイルを読んで書き戻す形。パスが文字列の値か、スクリプトの引数のときだけ数える
+    # （文の中にファイル名が出てくる本文や、別のファイルを書く fixture の生成を数えないため）
+    if not _BASH_SCRIPT_WRITE.search(c):
+        return False
+    literal = any(_BASH_CODE_PATH.fullmatch(t) and not _outside(t, roots) for t in re.findall(r"[\"']([^\"'\s]+)[\"']", c))
+    argument = any(not _outside(t, roots) for t in _PYTHON_CODE_ARG.findall(c))
+    return literal or argument
 
 
 def _user_slash_commands(message):
@@ -96,7 +123,7 @@ def _user_slash_commands(message):
     return [m.group(1) for t in texts for m in _SLASH_COMMAND.finditer(t)]
 
 
-def read_history(transcript_path):
+def read_history(transcript_path, roots=()):
     """記録を頭から読み、(dev-task-flow を開いたか, 最後のコードの変更の位置, 最後の self-review の位置) を返す"""
     flow, last_edit, last_review, i = False, -1, -1, 0
     with open(transcript_path, encoding="utf-8") as f:
@@ -128,13 +155,24 @@ def read_history(transcript_path):
                     flow = True
                 if skill == "self-review":
                     last_review = i
-                if _is_code_edit(name, inp):
+                if _is_code_edit(name, inp, roots):
                     last_edit = i
     return flow, last_edit, last_review
 
 
 def _git(repo, *args):
     return subprocess.run(["git", *args], cwd=repo, capture_output=True, text=True, timeout=GIT_TIMEOUT_SEC)
+
+
+def work_roots(cwd):
+    """コードの変更として数える場所。hook の cwd と、その git のルート"""
+    if not cwd or not os.path.isdir(cwd):
+        return []
+    roots = [os.path.realpath(cwd)]
+    top = _git(cwd, "rev-parse", "--show-toplevel")
+    if top.returncode == 0 and top.stdout.strip():
+        roots.append(os.path.realpath(top.stdout.strip()))
+    return roots
 
 
 def stack_gaps(cwd):
@@ -208,11 +246,12 @@ def decide(data):
     path = data.get("transcript_path")
     if not path or not Path(path).is_file():
         return None
-    flow, last_edit, last_review = read_history(path)
+    cwd = data.get("cwd") or "."
+    flow, last_edit, last_review = read_history(path, work_roots(cwd))
     if not flow:
         return None
     needs_review = last_edit > last_review
-    gaps = stack_gaps(data.get("cwd") or ".")
+    gaps = stack_gaps(cwd)
     if not (needs_review or gaps):
         return None
     text = deny_reason(what, needs_review, gaps)
