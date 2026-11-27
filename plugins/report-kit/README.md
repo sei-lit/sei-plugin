@@ -33,4 +33,5 @@ description の条件により発動するほか、`/report-kit:readable-artifac
 - 文の量の上限は日本語の字数で決めてある。英語のページでは字数が多めに出る。
 - 検査は `<figure>`・`<svg>`・`<table>`・`<img>`・`<pre class="mermaid">`・`role="img"` を図として数える。
   `<div>` で作った図は数えないので、この決まりより前に作ったページは、図があっても点が下がる。
+- `<figure>` の中の文字は、図の説明（figcaption）と表のセルを除いて文の量に数えない。図の中に長い文を書いても検査は止めない。
 - mermaid の図は公開先が描くもので、`render_check.py` では描かれない。
