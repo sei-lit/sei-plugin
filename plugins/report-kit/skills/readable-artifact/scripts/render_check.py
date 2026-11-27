@@ -65,17 +65,21 @@ PROBE = r"""<script>
     document.querySelectorAll("svg").forEach(function (svg, si) {
       var sb = svg.getBoundingClientRect();
       var texts = Array.from(svg.querySelectorAll("text")).map(function (t) { return {t: t, b: t.getBoundingClientRect()}; });
-      var shapes = Array.from(svg.querySelectorAll("rect, circle, ellipse")).map(function (s) { return s.getBoundingClientRect(); });
+      var shapes = Array.from(svg.querySelectorAll("rect, circle, ellipse")).map(function (s) { return s.getBBox(); });
       var min = Infinity;
       texts.forEach(function (x, i) {
         var label = (x.t.textContent || "").trim().slice(0, 24);
         if (x.b.height) min = Math.min(min, x.b.height / 1.25);
         if (x.b.left < sb.left - 1 || x.b.right > sb.right + 1 || x.b.top < sb.top - 1 || x.b.bottom > sb.bottom + 1)
           r.problems.push({kind: "svg-text-outside", detail: "図 " + (si + 1) + " の「" + label + "」が図の外に出る"});
-        var cx = (x.b.left + x.b.right) / 2, cy = (x.b.top + x.b.bottom) / 2;
-        var box = shapes.filter(function (s) { return s.left <= cx && cx <= s.right && s.top <= cy && cy <= s.bottom; })
+        // 文字の置き場所（x, y の属性）を含む最も小さい図形を、その文字の箱とみなす。
+        // 文字の外接矩形の中心で探すと、大きくはみ出した文字ほど箱が見つからなくなる
+        var tb = x.t.getBBox();
+        var ax = parseFloat(x.t.getAttribute("x")), ay = parseFloat(x.t.getAttribute("y")) - tb.height * 0.3;
+        if (isNaN(ax) || isNaN(ay)) { ax = tb.x + tb.width / 2; ay = tb.y + tb.height / 2; }
+        var box = shapes.filter(function (s) { return s.x <= ax && ax <= s.x + s.width && s.y <= ay && ay <= s.y + s.height; })
                         .sort(function (a, b) { return a.width * a.height - b.width * b.height; })[0];
-        if (box && (x.b.left < box.left - 1 || x.b.right > box.right + 1))
+        if (box && (tb.x < box.x - 1 || tb.x + tb.width > box.x + box.width + 1))
           r.problems.push({kind: "svg-text-overflow", detail: "図 " + (si + 1) + " の「" + label + "」が箱からはみ出す"});
         for (var j = i + 1; j < texts.length; j++)
           if (inter(x.b, texts[j].b) > 4)
@@ -156,9 +160,15 @@ def main():
                 height = min(max(rep.get("height", 1200), 400), 16000)
                 h.write_text(harness(page, theme, width, height, win_w), encoding="utf-8")
                 png = out / f"{key}.png"
+                png.unlink(missing_ok=True)
                 chrome(base, [f"--window-size={win_w},{height}", f"--screenshot={png}", h.as_uri()])
-                if win_w != width and shutil.which("sips"):
-                    subprocess.run(["sips", "-c", str(height), str(width), str(png)], capture_output=True)
+                if not png.exists():
+                    rep.setdefault("problems", []).append({"kind": "no-screenshot", "detail": "スクリーンショットを撮れなかった"})
+                elif win_w != width:
+                    if shutil.which("sips"):
+                        subprocess.run(["sips", "-c", str(height), str(width), str(png)], capture_output=True)
+                    else:
+                        print(f"{key}: sips が無いので切り抜いていない（左右に {(win_w - width) // 2}px の灰色の余白が残る）")
                 report[key] = rep
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

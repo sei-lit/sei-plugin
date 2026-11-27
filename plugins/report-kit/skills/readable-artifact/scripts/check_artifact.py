@@ -209,7 +209,7 @@ def tokens(block):
 
 
 def theme_blocks(css):
-    root = [b for b in find_blocks(css, r"(?<![\w\]\)-]):root\s*\{")]
+    root = find_blocks(css, r"(?<![\w\]\)-]):root\s*\{")
     media = []
     for s, e, body in find_blocks(css, r"@media[^{]*prefers-color-scheme\s*:\s*dark[^{]*\{"):
         for s2, e2, inner in find_blocks(body, r':root:not\(\[data-theme=["\']?light["\']?\]\)\s*\{'):
@@ -478,7 +478,7 @@ def check_external(p):
         if n.tag == "link" and "stylesheet" in (n.attrs.get("rel") or ""):
             href = n.attrs.get("href") or ""
             units.append((href.startswith(STYLE_HOSTS), f"許されない場所のスタイルシート: {href}"))
-        if n.tag in ("img", "source", "video", "audio", "image", "use") or (n.tag == "image"):
+        if n.tag in ("img", "source", "video", "audio", "image", "use"):
             for k in ("src", "href", "xlink:href"):
                 v = n.attrs.get(k)
                 if v and re.match(r"^(https?:)?//", v):

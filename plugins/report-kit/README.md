@@ -15,7 +15,7 @@
 | `skills/readable-artifact/references/verify.md` | 描画を見る手段と、見る点 |
 | `skills/readable-artifact/scripts/check_artifact.py` | 文の量と公開の決まりの検査。2 つの群（readability・publish）の点と、不合格の一覧を出す |
 | `skills/readable-artifact/scripts/render_check.py` | 手元の Chrome で PC とスマホの幅 × 2 つのテーマを撮り、はみ出しや SVG の文字の重なりを一覧にする |
-| `skills/readable-artifact/tests/` | 検査の受け入れテスト（`python3 -m unittest discover -s skills/readable-artifact/tests`）と、直す前・直した後の見本 |
+| `skills/readable-artifact/tests/` | 2 つのスクリプトの受け入れテスト（`python3 -m unittest discover -s skills/readable-artifact/tests`。描画のテストは Chrome が無ければ飛ばす）と、直す前・直した後の見本 |
 
 前提: Python 3.9 以降（標準ライブラリだけ）。`render_check.py` は Chrome か Chromium を使い、macOS ではスマホの幅の画像の切り抜きに `sips` を使う。
 
