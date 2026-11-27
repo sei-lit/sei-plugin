@@ -1,0 +1,66 @@
+<title>ファイルの保存先の切り替え</title>
+<style>
+:root {
+  --bg: #f5f6f8; --surface: #ffffff; --fg: #1d2430; --muted: #5d6878; --line: #d6dbe3;
+  --chg: #b4521d; --chg-soft: #fbeadf; --gone: #8a8f98;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181f; --surface: #1b212b; --fg: #e5e9ef; --muted: #9ba6b5; --line: #303a47;
+    --chg: #f2a774; --chg-soft: #3b291c; --gone: #7d8694;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14181f; --surface: #1b212b; --fg: #e5e9ef; --muted: #9ba6b5; --line: #303a47;
+  --chg: #f2a774; --chg-soft: #3b291c; --gone: #7d8694;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-size: 15px; line-height: 1.75; margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+.page { max-width: 920px; margin-inline: auto; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+.ba { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 10px; }
+.ba-head { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ba-cell { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 14px; min-width: 0; overflow-wrap: anywhere; background: var(--surface); }
+.ba-cell.is-chg { background: var(--chg-soft); border-color: var(--chg); }
+.ba-cell.is-gone { color: var(--gone); text-decoration: line-through; border-style: dashed; }
+.ba-cell.is-empty { border-style: dashed; color: var(--muted); }
+figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; }
+</style>
+
+<div class="page">
+  <h1>ファイルの保存先の切り替え</h1>
+  <ul>
+    <li>上げたファイルの置き場所を、自前のサーバーからクラウドのストレージに移す。</li>
+    <li>変わるのは、上げ方・見せ方・バックアップの 3 つ。</li>
+    <li>古いファイルは、読まれたときに 1 件ずつ移す（決定）。</li>
+  </ul>
+
+  <h2>今と変更後</h2>
+  <figure>
+    <div class="ba">
+      <span class="ba-head">今</span><span class="ba-head">変更後</span>
+      <div class="ba-cell is-chg">サーバーが受け取って書く</div><div class="ba-cell is-chg">端末がストレージに直接送る</div>
+      <div class="ba-cell">場所を DB に記録する</div><div class="ba-cell">場所を DB に記録する</div>
+      <div class="ba-cell is-chg">固定の URL を返す</div><div class="ba-cell is-chg">期限付きの URL を返す</div>
+      <div class="ba-cell is-gone">夜間のバッチで写す</div><div class="ba-cell is-chg">ストレージが版を残す</div>
+    </div>
+    <figcaption>色の付いた行が変わる所。固定の URL は使えなくなるので、外に貼られた URL は開けなくなる。</figcaption>
+  </figure>
+
+  <h2>分かっていないこと</h2>
+  <figure>
+    <div class="scroll"><table>
+      <tr><th>こと</th><th>確かめ方</th></tr>
+      <tr><td>期限付きの URL の長さ</td><td>見せる画面で、何分あれば足りるかを測る（未確認）</td></tr>
+      <tr><td>1 件ずつ移すときの遅れ</td><td>試しの環境で、初めて読むときの時間を測る（推定）</td></tr>
+    </table></div>
+  </figure>
+
+  <details><summary>根拠（今の仕組みの細部）</summary>
+    <p>今は、容量が足りなくなると手でディスクを足している。夜間のバッチは、ファイルサーバーの中身をまるごと別の場所に写している。</p>
+  </details>
+</div>

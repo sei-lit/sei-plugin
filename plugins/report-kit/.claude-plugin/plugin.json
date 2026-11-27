@@ -1,6 +1,6 @@
 {
   "name": "report-kit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Readable Artifact pages: readable-artifact skill that decides what to draw as a figure (dependency graph, before/after, flow, timeline, comparison table), caps prose with countable limits, and verifies with a static checker and a headless-Chrome render check. Works alongside the built-in artifact-design, artifact-diagramming and dataviz skills.",
   "author": {
     "name": "sei-lit"

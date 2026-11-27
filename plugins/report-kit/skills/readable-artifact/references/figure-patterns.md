@@ -1,7 +1,7 @@
 # 図の雛形
 
 写して、部品の名前と座標だけを替えて使う。例の題材は「通知の配信を、夜間のバッチからキューに移す」。
-すべての雛形は `tests/fixtures/after.html` に入っていて、`check_artifact.py` と `render_check.py` を通る。
+すべての雛形は `tests/cases/labels-without-lines/after.html` に入っていて、`check_artifact.py` と `render_check.py` を通る。
 
 目次:
 
@@ -55,7 +55,7 @@ figcaption { color: var(--muted); font-size: 13px; }
 
 決まり:
 
-- 図は必ず `<figure>` で包み、`<figcaption>` に「何を見ればよいか」を 1〜2 文で書く。検査は `<figure>`・`<svg>`・`<table>`・`<img>`・`<pre class="mermaid">`・`role="img"` を図として数え、`<div class="fig">` は数えない。
+- 図は必ず `<figure>` で包み、`<figcaption>` に「何を見ればよいか」を `caption` の上限（SKILL.md の表）の中で書く。検査は `<figure>`・`<svg>`・`<table>`・`<img>`・`<pre class="mermaid">`・`role="img"` を図として数え、`<div class="fig">` は数えない。
 - 幅の決まった図（SVG・表・コード）は `.scroll` の中に入れる。ページ全体を横に動かさない。
 
 ## 2. 部品どうしの関係: インラインの SVG
@@ -239,7 +239,7 @@ PC では左から右、スマホの幅では上から下に並び替わる。
 
 ## 6. 選択肢の比較: 表
 
-行 = 選択肢、列 = 観点。セルは 1 文・60 字まで。推す案の行に印を付け、理由を列の 1 つにする。
+行 = 選択肢、列 = 観点。セルは `cell` の上限（SKILL.md の表）まで。推す案の行に印を付け、理由を列の 1 つにする。
 観点が 5 つを超えるときは、判断に効く 3〜4 個だけを表に出し、残りは折りたたみに入れる。
 列が 2 つの表には `min-width` を付けない（スマホの幅で、2 列目が横に動く箱の外に隠れる）。
 
@@ -292,7 +292,7 @@ summary { cursor: pointer; font-weight: 600; }
 
 公開先は外の画像を読めない（`<img src="https://…">` は表示されない）。画像は data: の URL で埋め込む。
 
-- スクリーンショットは幅 1200px 以下に縮め、JPEG（写真や画面）か PNG（線と文字だけの図）にする。1 枚 300KB 以下、ページ全体で 2MB 以下を目安にする。
+- スクリーンショットは幅 1200px 以下に縮め、JPEG（写真や画面）か PNG（線と文字だけの図）にする。1 枚は `external` の上限（limits.json の `data_uri_max`。base64 の長さ）以下、ページ全体で 2MB 以下を目安にする。
 - macOS では `sips -Z 1200 -s format jpeg -s formatOptions 70 in.png --out out.jpg` で縮め、`base64 -i out.jpg` の結果を `<img src="data:image/jpeg;base64,…">` に入れる。
 - 画像の中の文字に説明を任せない。何を見ればよいかを `<figcaption>` に書き、`alt` にも同じことを書く。
 - 線と箱で描ける図は、画像にせず SVG で描く（暗いテーマで色が変わらず、拡大しても崩れないため）。

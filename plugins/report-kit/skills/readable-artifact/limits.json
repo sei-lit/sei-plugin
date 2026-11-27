@@ -1,0 +1,14 @@
+{
+  "lead": {"max_points": 3, "point_max_sentences": 1, "point_max_chars": 60, "meta_max_lines": 1, "meta_max_chars": 80},
+  "section-prose": {"max_chars": 300},
+  "figure-first": {"needs_figure_over": 120, "before_figure_max": 60},
+  "caption": {"max_sentences": 2, "max_chars": 100},
+  "bullet": {"max_sentences": 1, "max_chars": 80},
+  "cell": {"max_sentences": 1, "max_chars": 60},
+  "page-prose": {"max_chars": 2000},
+  "repeat": {"min_chars": 20},
+  "shape": {"chips_min": 8, "arrows_min": 3},
+  "scroll-box": {"svg_max_width": 400},
+  "external": {"data_uri_max": 400000},
+  "gap": {"boundary": 80}
+}
