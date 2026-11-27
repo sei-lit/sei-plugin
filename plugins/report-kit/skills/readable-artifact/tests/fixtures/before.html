@@ -1,0 +1,72 @@
+<title>通知キューの移行</title>
+<style>
+:root {
+  --bg: #f5f6f8; --surface: #ffffff; --fg: #1d2430; --muted: #5d6878; --line: #d6dbe3;
+  --now: #2b7a55; --now-soft: #e2f2ea; --up: #b4521d; --up-soft: #fbeadf; --wait: #6a4bb3; --wait-soft: #eee9fa;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181f; --surface: #1b212b; --fg: #e5e9ef; --muted: #9ba6b5; --line: #303a47;
+    --now: #75cfa5; --now-soft: #183128; --up: #f2a774; --up-soft: #3b291c; --wait: #b7a2ee; --wait-soft: #2a2442;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14181f; --surface: #1b212b; --fg: #e5e9ef; --muted: #9ba6b5; --line: #303a47;
+  --now: #75cfa5; --now-soft: #183128; --up: #f2a774; --up-soft: #3b291c; --wait: #b7a2ee; --wait-soft: #2a2442;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-size: 15px; line-height: 1.75;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+.page { max-width: 920px; margin-inline: auto; display: flex; flex-direction: column; gap: 24px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.group { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: var(--surface); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 12px; padding: 2px 9px; border-radius: 999px; }
+.tag.now { background: var(--now-soft); color: var(--now); }
+.tag.up { background: var(--up-soft); color: var(--up); }
+.tag.wait { background: var(--wait-soft); color: var(--wait); }
+.meta { color: var(--muted); font-size: 13px; }
+</style>
+
+<div class="page">
+  <header>
+    <h1>通知キューの移行</h1>
+    <p class="meta">1 月 10 日時点。今どうなっているかと、夜間のバッチを完全になくしてキューにするために何が要るかをまとめた。もとは、同じ日の調査（設定ファイル、各送り先の仕様、試しの環境のログ）と、送り先の会社からの回答。</p>
+  </header>
+
+  <section>
+    <ul>
+      <li>夜間のバッチに残っているのは<strong>送り先だけで、12 件</strong>ある。受け付けの API は、もうキューに書ける。</li>
+      <li>12 件は 3 つに分かれる。<strong>今すぐキューにできるもの 5 件</strong>、<strong>設定を変えればキューにできるもの 4 件</strong>、<strong>外部の 3 件</strong>。</li>
+      <li>外部の 3 件だけは、相手の側の対応（新しい受け口、3 月の見込み）を待つ。出たあとも、2 つは自前の変換が要る。</li>
+      <li>送り先を移すほかに、<strong>バッチが黙ってやっていた仕事</strong>（失敗の再送、送った記録）を引き継ぐ作業がある。壊れやすいのはここ。</li>
+      <li>決定（1 月 10 日）: 外部の 3 件は相手の対応を待つ。追加の質問は、今は送らない。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>12 件の仕分け</h2>
+    <p>12 件を、キューに移すときの手間で 3 つに分けた。今すぐ移せるものは、送り先の仕様がキューの形にそのまま合う。設定を変えれば移せるものは、送る順番か件数の上限の設定を変える必要がある。外部の 3 件は、相手の受け口が新しくなるまで待つ。</p>
+    <div class="cols">
+      <div class="group"><p>今すぐ移せる 5 件</p><div class="chips"><span class="tag now">メール</span><span class="tag now">プッシュ</span><span class="tag now">SMS</span><span class="tag now">チャット</span><span class="tag now">社内通知</span></div></div>
+      <div class="group"><p>設定を変えれば移せる 4 件</p><div class="chips"><span class="tag up">請求</span><span class="tag up">配送</span><span class="tag up">在庫</span><span class="tag up">予約</span></div></div>
+      <div class="group"><p>外部の 3 件</p><div class="chips"><span class="tag wait">決済</span><span class="tag wait">広告</span><span class="tag wait">分析</span></div></div>
+    </div>
+    <p>請求と配送は、送る順番を守る必要があるので、キューの順番を保つ設定にする。在庫と予約は、1 秒あたりの件数の上限があるので、ワーカーの数を絞る。決済と広告は、相手の新しい受け口が 3 月に出る見込みで、出たら変換を自前で書く。分析は、相手の回答を待っている。</p>
+  </section>
+
+  <section>
+    <h2>必要な作業（順に）</h2>
+    <p>最初にキューとワーカーを作る。中身が空でも、ここを先に作れば、あとは 1 つずつ移せる。次に、今すぐ移せる 5 件を移す。このとき、バッチとキューの両方から同じ通知を送らないことを確かめる。その次に、設定を変えれば移せる 4 件を移す。順番と件数の上限の設定を、1 件ずつ確かめながら進める。外部の 3 件は、3 月に相手の受け口が出てから移す。最後に、夜間のバッチそのものを消す。バッチの設定、ログの置き場所、監視の設定、手順書の記述をすべて消す。</p>
+    <p>受付 → キュー → ワーカー → 送り先 → 記録 の順に流れる。</p>
+  </section>
+
+  <section>
+    <h2>分かっていないこと</h2>
+    <ul>
+      <li>外部の受け口の形: どの形式で受けるか、認証の方法、件数の上限。出たら仕様書を読めば分かる。</li>
+      <li>ワーカーが落ちたときの動き: 二重に送るかは、試しの環境で止めてみないと分からない。今は止めていない。</li>
+    </ul>
+  </section>
+</div>
