@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Original skills by sei-lit. Provider-agnostic: plain-Markdown skills usable from Claude Code, Codex, and other agents.",
-    "version": "0.7.2"
+    "version": "0.7.3"
   },
   "plugins": [
     {
@@ -65,7 +65,7 @@
       "name": "dev-flow",
       "source": "./plugins/dev-flow",
       "description": "Development task flow: dev-task-flow skill that runs an implementation task (feature, improvement, refactoring) from a short brief through sizing, goal exploration, delegation and design consultation, implementation, verification, self-review, PR, and final report. Delegates each step to its owning skill (goal-exploration, model-effort-guide, self-review, pr-split, etc.). Includes a Claude Code PreToolUse hook that, in sessions that opened dev-task-flow, blocks gh pr create / gh pr ready / worker_done until self-review covers the last code change and stacked branches include their lower steps.",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "category": "development",
       "tags": [
         "workflow",
