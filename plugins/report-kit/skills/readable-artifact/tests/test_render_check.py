@@ -45,8 +45,8 @@ class RenderCheck(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def test_after_fixture_has_no_problems_and_four_screenshots(self):
-        code, report = render(HERE / "fixtures" / "after.html", self.tmp)
+    def test_good_case_page_has_no_problems_and_four_screenshots(self):
+        code, report = render(HERE / "cases" / "labels-without-lines" / "after.html", self.tmp)
         self.assertEqual(code, 0, report)
         self.assertEqual(sorted(report), ["desktop-dark", "desktop-light", "phone-dark", "phone-light"])
         self.assertEqual(report["phone-light"]["width"], 390)

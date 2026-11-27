@@ -1,0 +1,52 @@
+<title>ファイルの保存先の切り替え</title>
+<style>
+:root {
+  --bg: #f5f6f8; --surface: #ffffff; --fg: #1d2430; --muted: #5d6878; --line: #d6dbe3;
+  --chg: #b4521d; --chg-soft: #fbeadf; --gone: #8a8f98;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181f; --surface: #1b212b; --fg: #e5e9ef; --muted: #9ba6b5; --line: #303a47;
+    --chg: #f2a774; --chg-soft: #3b291c; --gone: #7d8694;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14181f; --surface: #1b212b; --fg: #e5e9ef; --muted: #9ba6b5; --line: #303a47;
+  --chg: #f2a774; --chg-soft: #3b291c; --gone: #7d8694;
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--fg); font-size: 15px; line-height: 1.75; margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+.page { max-width: 920px; margin-inline: auto; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+</style>
+
+<div class="page">
+  <h1>ファイルの保存先の切り替え</h1>
+  <ul>
+    <li>利用者が上げたファイルは、今は自前のファイルサーバーに置いている。これをクラウドのストレージに移す。</li>
+    <li>上げる処理と、見せる処理の両方が変わる。上げる処理は、サーバーを通さずにストレージへ直接送る形になる。</li>
+    <li>見せる処理は、期限付きの URL を返す形になる。今の固定の URL は使えなくなる。</li>
+    <li>夜間のバックアップは要らなくなる。ストレージの側で版を残すため。</li>
+    <li>決定: 古いファイルは一度に移さず、読まれたときに 1 件ずつ移す。</li>
+  </ul>
+
+  <h2>今の仕組み</h2>
+  <p>利用者がファイルを上げると、アプリのサーバーが受け取り、ファイルサーバーの決まったフォルダに書く。書いた場所は DB に記録する。見せるときは、アプリのサーバーが DB から場所を読み、固定の URL を返す。ファイルサーバーの中身は、夜間のバッチが別の場所にまるごと写してバックアップにしている。容量が足りなくなると、手でディスクを足している。</p>
+
+  <h2>変更後の仕組み</h2>
+  <p>利用者がファイルを上げるときは、アプリのサーバーが上げ先の URL を発行し、利用者の端末がストレージに直接送る。書いた場所は今と同じく DB に記録する。見せるときは、アプリのサーバーが DB から場所を読み、期限付きの URL を返す。バックアップは、ストレージの版の機能で残すので、夜間のバッチは止める。容量は、ストレージの側で増える。</p>
+
+  <h2>変わる所</h2>
+  <p>上の 2 つの節で書いた違いを、処理ごとに表にした。変わらない所も、比べやすいように入れてある。DB に場所を記録する所は変えない。</p>
+  <div class="scroll"><table>
+    <tr><th>処理</th><th>今</th><th>変更後</th></tr>
+    <tr><td>上げる</td><td>サーバーが受け取って書く。重いファイルでサーバーが詰まる。</td><td>端末がストレージに直接送る。サーバーは URL を出すだけ。</td></tr>
+    <tr><td>場所の記録</td><td>DB に書く</td><td>DB に書く</td></tr>
+    <tr><td>見せる</td><td>固定の URL。誰でも開ける。</td><td>期限付きの URL。期限が過ぎると開けない。</td></tr>
+    <tr><td>バックアップ</td><td>夜間のバッチ</td><td>ストレージの版の機能</td></tr>
+  </table></div>
+</div>

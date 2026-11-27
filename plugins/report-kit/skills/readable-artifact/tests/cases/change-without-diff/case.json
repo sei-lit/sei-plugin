@@ -1,0 +1,13 @@
+{
+ "id": "change-without-diff",
+ "feedback": {
+  "verdict": "bad",
+  "quote": "どこが変わったのか分からない。図を多めにしてほしい。",
+  "note": "実物の評価を、題材をファイルの保存先の切り替えに替えて書き直した。直す前の版は、今と変更後を別々の節の文で書き、表を最後に置いている。直した後の版は、今と変更後を左右に並べ、変わる行だけに色を付けた"
+ },
+ "rules": ["figure-first"],
+ "pages": [
+  {"file": "before.html", "label": "bad"},
+  {"file": "after.html", "label": "good"}
+ ]
+}

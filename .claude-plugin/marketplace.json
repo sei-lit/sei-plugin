@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Original skills by sei-lit. Provider-agnostic: plain-Markdown skills usable from Claude Code, Codex, and other agents.",
-    "version": "0.6.0"
+    "version": "0.6.1"
   },
   "plugins": [
     {
@@ -79,7 +79,7 @@
       "name": "report-kit",
       "source": "./plugins/report-kit",
       "description": "Readable Artifact pages: readable-artifact skill that decides what to draw as a figure (dependency graph, before/after, flow, timeline, comparison table), caps prose with countable limits, and verifies with a static checker and a headless-Chrome render check. Works alongside the built-in artifact-design, artifact-diagramming and dataviz skills.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "productivity",
       "tags": [
         "artifact",

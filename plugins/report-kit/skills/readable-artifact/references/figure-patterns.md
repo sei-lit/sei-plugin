@@ -1,7 +1,7 @@
 # 図の雛形
 
 写して、部品の名前と座標だけを替えて使う。例の題材は「通知の配信を、夜間のバッチからキューに移す」。
-すべての雛形は `tests/fixtures/after.html` に入っていて、`check_artifact.py` と `render_check.py` を通る。
+すべての雛形は `tests/cases/labels-without-lines/after.html` に入っていて、`check_artifact.py` と `render_check.py` を通る。
 
 目次:
 
