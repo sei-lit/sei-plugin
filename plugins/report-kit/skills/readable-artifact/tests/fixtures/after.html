@@ -1,0 +1,207 @@
+<title>通知キューの移行</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* layout: 1 カラム。要点 → 変更後の部品の図 → 今と変更後 → 流れ → 時期 → 案の比較 → 分かっていないこと → 根拠（折りたたみ） */
+:root {
+  --bg: #f5f6f8; --surface: #ffffff; --fg: #1d2430; --muted: #5d6878; --line: #d6dbe3;
+  --accent: #2459a6; --accent-soft: #e5edf9;
+  --chg: #b4521d; --chg-soft: #fbeadf;
+  --gone: #8a8f98;
+  --ok: #2b7a55; --ok-soft: #e2f2ea;
+  --font-text: "Noto Sans JP", "Hiragino Sans", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181f; --surface: #1b212b; --fg: #e5e9ef; --muted: #9ba6b5; --line: #303a47;
+    --accent: #84b1ef; --accent-soft: #1e2d44;
+    --chg: #f2a774; --chg-soft: #3b291c;
+    --gone: #7d8694;
+    --ok: #75cfa5; --ok-soft: #183128;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14181f; --surface: #1b212b; --fg: #e5e9ef; --muted: #9ba6b5; --line: #303a47;
+  --accent: #84b1ef; --accent-soft: #1e2d44;
+  --chg: #f2a774; --chg-soft: #3b291c;
+  --gone: #7d8694;
+  --ok: #75cfa5; --ok-soft: #183128;
+  color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-text); font-size: 15px; line-height: 1.7;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.page { max-width: 920px; margin-inline: auto; display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: 24px; margin: 0; line-height: 1.35; text-wrap: balance; }
+h2 { font-size: 18px; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+section { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.meta { color: var(--muted); font-size: 13px; }
+.lead ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; font-size: 16px; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+figcaption { color: var(--muted); font-size: 13px; }
+.scroll { overflow-x: auto; }
+.dep { display: block; width: 100%; height: auto; min-width: 576px; }
+.d-node { fill: var(--surface); stroke: var(--muted); stroke-width: 1.5; }
+.d-node.is-chg { fill: var(--chg-soft); stroke: var(--chg); }
+.d-node.is-gone { fill: none; stroke: var(--gone); stroke-dasharray: 5 4; }
+.d-edge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+.d-edge.is-chg { stroke: var(--chg); stroke-width: 2.5; }
+.d-head { fill: var(--muted); }
+.d-head.is-chg { fill: var(--chg); }
+.d-label { fill: var(--fg); font-size: 13px; font-family: var(--font-text); }
+.d-note { fill: var(--muted); font-size: 12px; font-family: var(--font-text); }
+.ba { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 10px; }
+.ba-head { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ba-cell { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 14px; min-width: 0; overflow-wrap: anywhere; }
+.ba-cell.is-chg, .ba-cell.is-new { background: var(--chg-soft); border-color: var(--chg); }
+.ba-cell.is-gone { color: var(--gone); text-decoration: line-through; border-style: dashed; }
+.ba-cell.is-empty { border-style: dashed; color: var(--muted); }
+.flow { list-style: none; margin: 0; padding: 0; display: flex; gap: 28px; flex-wrap: wrap; }
+.flow > li { position: relative; flex: 1 1 140px; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+.flow > li.is-chg { background: var(--chg-soft); border-color: var(--chg); }
+.flow > li + li::before { content: "→"; position: absolute; left: -22px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.flow-sub { display: block; font-size: 12px; color: var(--muted); }
+@media (max-width: 560px) {
+  .flow { flex-direction: column; gap: 22px; }
+  .flow > li { flex: none; } /* 縦に並べると flex-basis が高さになり、箱が 140px に伸びる */
+  .flow > li + li::before { content: "↓"; left: 50%; top: -20px; transform: none; }
+}
+.tl { display: grid; grid-template-columns: minmax(90px, 160px) repeat(4, minmax(0, 1fr)); gap: 4px; font-size: 13px; }
+.tl > span { padding: 5px 4px; border-radius: 6px; text-align: center; min-width: 0; overflow-wrap: anywhere; }
+.tl .tl-name { text-align: left; }
+.tl .tl-head { font-weight: 600; color: var(--muted); }
+.tl .tl-on { background: var(--accent-soft); color: var(--accent); }
+.tl .tl-chg { background: var(--chg-soft); color: var(--chg); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-size: 12.5px; }
+tr.is-pick td { background: var(--accent-soft); }
+.list { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
+.lbl { font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+.lbl.is-run { background: var(--ok-soft); color: var(--ok); }
+.lbl.is-read { background: var(--accent-soft); color: var(--accent); }
+.lbl.is-guess { background: var(--chg-soft); color: var(--chg); }
+.lbl.is-unknown { border: 1px dashed var(--muted); color: var(--muted); }
+details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--surface); }
+summary { cursor: pointer; font-weight: 600; }
+details > * + * { margin-top: 8px; }
+</style>
+
+<div class="page">
+  <header class="lead">
+    <h1>通知キューの移行</h1>
+    <p class="meta">調べた日: 1 月 10 日。試しの環境で 1 回動かした。</p>
+    <ul>
+      <li>通知は、夜間のバッチをやめて<strong>キュー</strong>から送る。</li>
+      <li>新しく入るのは<strong>キューとワーカーの 2 つ</strong>だけ。</li>
+      <li>残る心配は<strong>二重に送ること</strong>で、まだ確かめていない。</li>
+    </ul>
+  </header>
+
+  <section>
+    <h2>変更後の部品</h2>
+    <figure>
+      <div class="scroll">
+        <svg class="dep" viewBox="0 0 720 260" role="img" aria-label="変更後は、API がキューに書き、ワーカーがキューから読んで、メールとプッシュの送信を呼ぶ">
+          <defs>
+            <marker id="dep-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="d-head"/></marker>
+            <marker id="dep-a-chg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="d-head is-chg"/></marker>
+          </defs>
+          <rect x="20" y="20" width="160" height="40" rx="8" class="d-node"/>
+          <text x="100" y="45" text-anchor="middle" class="d-label">API サーバー</text>
+          <rect x="20" y="120" width="160" height="40" rx="8" class="d-node is-chg"/>
+          <text x="100" y="145" text-anchor="middle" class="d-label">キュー</text>
+          <rect x="280" y="120" width="160" height="40" rx="8" class="d-node is-chg"/>
+          <text x="360" y="145" text-anchor="middle" class="d-label">ワーカー</text>
+          <rect x="540" y="120" width="160" height="40" rx="8" class="d-node is-gone"/>
+          <text x="620" y="145" text-anchor="middle" class="d-label">夜間のバッチ</text>
+          <rect x="200" y="200" width="160" height="40" rx="8" class="d-node"/>
+          <text x="280" y="225" text-anchor="middle" class="d-label">メール送信</text>
+          <rect x="380" y="200" width="160" height="40" rx="8" class="d-node"/>
+          <text x="460" y="225" text-anchor="middle" class="d-label">プッシュ送信</text>
+          <line x1="100" y1="60" x2="100" y2="118" class="d-edge is-chg" marker-end="url(#dep-a-chg)"/>
+          <text x="108" y="94" class="d-note">書く</text>
+          <line x1="278" y1="140" x2="182" y2="140" class="d-edge is-chg" marker-end="url(#dep-a-chg)"/>
+          <text x="206" y="132" class="d-note">読む</text>
+          <line x1="340" y1="160" x2="290" y2="198" class="d-edge" marker-end="url(#dep-a)"/>
+          <line x1="380" y1="160" x2="450" y2="198" class="d-edge" marker-end="url(#dep-a)"/>
+        </svg>
+      </div>
+      <figcaption>色の付いた 2 つが新しく入る部品。点線の夜間のバッチはなくなる。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>今と変更後</h2>
+    <figure>
+      <div class="ba">
+        <span class="ba-head">今</span><span class="ba-head">変更後</span>
+        <div class="ba-cell">API サーバーが DB に書く</div><div class="ba-cell">API サーバーが DB に書く</div>
+        <div class="ba-cell is-gone">夜間のバッチが 1 日 1 回送る</div><div class="ba-cell is-chg">ワーカーがすぐ送る</div>
+        <div class="ba-cell is-empty">（なし）</div><div class="ba-cell is-new">キューに積む</div>
+      </div>
+      <figcaption>変わるのは送る時期だけで、DB への書き方は変えない。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>送るまでの流れ</h2>
+    <figure>
+      <ol class="flow">
+        <li>受け付ける<span class="flow-sub">API サーバー</span></li>
+        <li class="is-chg">キューに積む<span class="flow-sub">新しい</span></li>
+        <li class="is-chg">取り出して送る<span class="flow-sub">ワーカー</span></li>
+        <li>結果を記録する<span class="flow-sub">DB</span></li>
+      </ol>
+      <figcaption>色の付いた 2 つが、今は夜間のバッチがまとめてしている仕事。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>時期</h2>
+    <figure>
+      <div class="tl">
+        <span class="tl-name"></span><span class="tl-head">1 月</span><span class="tl-head">2 月</span><span class="tl-head">3 月</span><span class="tl-head">4 月</span>
+        <span class="tl-name">キューを作る</span><span class="tl-on">作る</span><span></span><span></span><span></span>
+        <span class="tl-name">両方で送る</span><span></span><span class="tl-on">並行</span><span class="tl-on">並行</span><span></span>
+        <span class="tl-name">バッチを消す</span><span></span><span></span><span></span><span class="tl-chg">消す</span>
+      </div>
+      <figcaption>色の付いたマスは予定で、決まった日付ではない。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>案の比較</h2>
+    <figure>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>案</th><th>成り立つ条件</th><th>壊れやすい所</th><th>判断</th></tr></thead>
+          <tbody>
+            <tr class="is-pick"><td>キューに移す</td><td>ワーカーを 1 つ動かせる</td><td>二重に送る</td><td>推す（送る時期を選べる）</td></tr>
+            <tr><td>バッチを 1 時間ごとにする</td><td>今の仕組みのまま</td><td>最大 1 時間遅れる</td><td>遅れが残る</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <figcaption>2 つの案の比較。推す案に色を付けた。</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>分かっていないこと</h2>
+    <ul class="list">
+      <li>ワーカーが落ちたときに二重に送らないか <span class="lbl is-unknown">未確認</span></li>
+      <li>キューは 1 秒に 500 件を受けられる <span class="lbl is-run">実行した</span></li>
+      <li>再送は 3 回まで <span class="lbl is-read">設定を読んだ</span></li>
+    </ul>
+    <details>
+      <summary>根拠（試しの環境での手順と結果）</summary>
+      <p>試しの環境でキューを 1 つ作り、1 秒に 500 件の通知を 10 分間積んだ。取り出しの遅れは最大で 2 秒だった。ワーカーを途中で止める試しはしていないので、二重に送るかは分からない。</p>
+      <p>バッチを 1 時間ごとにする案は、今の仕組みのまま動くが、送るまでの遅れが最大 1 時間残るので推さない。</p>
+    </details>
+  </section>
+</div>
