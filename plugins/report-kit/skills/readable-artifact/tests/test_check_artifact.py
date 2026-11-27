@@ -111,9 +111,32 @@ class AddCases(unittest.TestCase):
         recs = [record("bad", before=self.bad, status="used"), record("bad", before=self.bad)]
         write_feedback(fb, recs)
         made = check_artifact.add_cases(fb, self.tmp / "cases", L)
-        self.assertEqual(made, [("2026-01-10-02", True)])
+        self.assertEqual(made, [("2026-01-10-02", True, [])])
         lines = [json.loads(x) for x in fb.read_text(encoding="utf-8").splitlines()]
         self.assertEqual(lines, [recs[0], {**recs[1], "status": "used"}])
+
+    def test_other_feedback_on_a_reused_line_number_gets_its_own_case(self):
+        fb = self.tmp / "fb.jsonl"
+        write_feedback(fb, [record("bad", before=self.bad)])
+        check_artifact.add_cases(fb, self.tmp / "cases", L)
+        write_feedback(fb, [{**record("good", after=self.good), "quote": "別の評価"}])
+        made = check_artifact.add_cases(fb, self.tmp / "cases", L)
+        self.assertEqual(made, [("2026-01-10-01-2", True, [])])
+        self.assertEqual(self.pages("2026-01-10-01"), {"before.html": "bad"})
+
+    def test_same_feedback_twice_makes_one_case(self):
+        fb = self.tmp / "fb.jsonl"
+        write_feedback(fb, [record("bad", before=self.bad)])
+        check_artifact.add_cases(fb, self.tmp / "cases", L)
+        write_feedback(fb, [record("bad", before=self.bad)])
+        self.assertEqual(check_artifact.add_cases(fb, self.tmp / "cases", L), [("2026-01-10-01", False, [])])
+
+    def test_missing_file_is_reported_and_kept_in_the_case(self):
+        fb = self.tmp / "fb.jsonl"
+        gone = str(self.tmp / "gone.html")
+        write_feedback(fb, [record("bad", before=gone, after=self.good)])
+        self.assertEqual(check_artifact.add_cases(fb, self.tmp / "cases", L), [("2026-01-10-01", True, [gone])])
+        self.assertEqual(self.pages("2026-01-10-01"), {"after.html": "unrated"})
 
     def test_case_records_scores_at_creation(self):
         fb = self.tmp / "fb.jsonl"

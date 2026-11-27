@@ -576,11 +576,22 @@ def rated_side(verdict):
     return "before" if verdict == "bad" else "after"
 
 
+def _same_feedback(a, b):
+    return {k: v for k, v in a.items() if k != "status"} == {k: v for k, v in b.items() if k != "status"}
+
+
 def make_case(rec, line_no, cases_dir, limits):
-    case_id = f"{rec.get('at', '')[:10] or 'undated'}-{line_no:02d}"
+    """(ケース ID, 作ったか, 写せなかったファイル) を返す。同じ評価のケースが既にあれば作らない"""
+    base = f"{rec.get('at', '')[:10] or 'undated'}-{line_no:02d}"
+    case_id, n = base, 1
+    # 記録の行が消えたり並べ替えられたりすると、行番号の ID が別の評価のケースと重なる。重なったら番号を足す
+    while (Path(cases_dir) / case_id / CASE_FILE).exists():
+        old = json.loads((Path(cases_dir) / case_id / CASE_FILE).read_text(encoding="utf-8"))
+        if _same_feedback(old.get("feedback", {}), rec):
+            return case_id, False, []
+        n += 1
+        case_id = f"{base}-{n}"
     d = Path(cases_dir) / case_id
-    if (d / CASE_FILE).exists():
-        return case_id, False
     d.mkdir(parents=True, exist_ok=True)
     pages, missing = [], []
     for side in ("before", "after"):
@@ -598,7 +609,7 @@ def make_case(rec, line_no, cases_dir, limits):
     # rules は null で作る。評価が指す決まりを読んで書くのは人かエージェント（検査の無い観点なら [] と書く）
     case = {"id": case_id, "feedback": rec, "rules": None, "pages": pages, "missing": missing}
     (d / CASE_FILE).write_text(json.dumps(case, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    return case_id, True
+    return case_id, True, missing
 
 
 def add_cases(feedback_path, cases_dir, limits):
@@ -610,8 +621,7 @@ def add_cases(feedback_path, cases_dir, limits):
         if not rec or rec.get("status") != "open":
             out.append(line)
             continue
-        case_id, created = make_case(rec, i, cases_dir, limits)
-        made.append((case_id, created))
+        made.append(make_case(rec, i, cases_dir, limits))
         rec["status"] = "used"
         out.append(json.dumps(rec, ensure_ascii=False))
     # 途中で止まっても記録が半分の行で残らないよう、隣に書いてから置き換える
@@ -690,8 +700,10 @@ def main():
     if a.add_cases:
         if len(a.cases) != 1 or a.page:
             ap.error("--add-cases には --cases を 1 つだけ渡す")
-        for case_id, created in add_cases(a.add_cases, a.cases[0], limits):
+        for case_id, created, missing in add_cases(a.add_cases, a.cases[0], limits):
             print(("作った " if created else "既にある ") + str(Path(a.cases[0]) / case_id))
+            for m in missing:
+                print(f"  写せなかった（ファイルが無い）: {m}", file=sys.stderr)
         return
     if a.cases:
         if a.page:
